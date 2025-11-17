@@ -1,5 +1,6 @@
 FROM docker.io/archlinux/archlinux:latest
 
+# base deps
 RUN pacman -Sy --noconfirm \
       base \
       dracut \
@@ -45,8 +46,71 @@ RUN sed -i 's|^HOME=.*|HOME=/var/home|' "/etc/default/useradd" && \
     echo "d /run/media 0755 root root -" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
     printf "[composefs]\nenabled = yes\n[sysroot]\nreadonly = true\n" | tee "/usr/lib/ostree/prepare-root.conf"
 
+
+# sway + custom shit
+RUN pacman -Sy --noconfirm        \
+        sway                      \
+        swayidle                  \
+        swaybg                    \
+        grim                      \
+        slurp                     \
+        brightnessctl             \
+        wtype                     \
+        wf-recorder               \
+        sway-contrib              \
+        swaylock                  \
+        swayimg                   \
+        waybar                    \
+        mako                      \
+        seatd                     \
+        system-config-printer     \
+        blueman                   \
+        chezmoi                   \
+        git                       \
+        gnome-disk-utility        \
+        gcc                       \
+        network-manager-applet    \
+        ghostty                   \
+        ghostty-terminfo          \
+        ghostty-shell-integration \
+        fish                      \
+        ghostty-terminfo          \
+        ibus                      \
+        thunar                    \
+        xarchiver                 \
+        thunar-archive-plugin     \
+        thunar-media-tags-plugin  \
+        thunar-shares-plugin      \
+        pipewire-jack             \
+        pipewire-alsa             \
+        wireplumber               \
+        helvum                    \
+        wezterm                   \
+        zathura                   \
+        lxqt-policykit            \
+        gvfs                      \
+        gvfs-onedrive             \
+        gvfs-mtp                  \
+        podman                    \
+        podman-compose            \
+        distrobox                 \
+        cliphist                  \
+        rofi                      \
+        xdg-desktop-portal-wlr    \
+        android-tools             \
+        android-udev              \
+        android-file-transfer     \
+        tailscale                 \
+        ufw                       \
+        xdg-desktop-portal-gtk    \
+        xdg-user-dirs-gtk         \
+        flatpak &&                \
+  pacman -S --clean --noconfirm && \
+  rm -rf /var/cache/pacman/pkg/*
+
+
 # Setup a temporary root passwd (changeme) for dev purposes
-# RUN pacman -S whois --noconfirm
-# RUN usermod -p "$(echo "changeme" | mkpasswd -s)" root
+RUN pacman -Sy whois --noconfirm
+RUN usermod -p "$(echo "changeme" | mkpasswd -s)" root
 
 RUN bootc container lint
