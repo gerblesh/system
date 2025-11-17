@@ -34,13 +34,15 @@ RUN --mount=type=tmpfs,dst=/tmp --mount=type=tmpfs,dst=/root \
     pacman -S --clean --noconfirm
 
 # Necessary for general behavior expected by image-based systems
-RUN sed -i 's|^HOME=.*|HOME=/var/home|' "/etc/default/useradd" && \
-    rm -rf /boot /home /root /usr/local /srv && \
-    mkdir -p /var /sysroot /boot /usr/lib/ostree && \
-    ln -s var/opt /opt && \
-    ln -s var/roothome /root && \
-    ln -s var/home /home && \
-    ln -s sysroot/ostree /ostree && \
+RUN sed -i 's|^HOME=.*|HOME=/var/home|' "/etc/default/useradd"  && \
+    rm -rf /boot /home /root /usr/local /srv                    && \
+    mkdir -p /var /sysroot /boot /usr/lib/ostree /usr/share/db  && \
+    ln -s var/opt /opt                                          && \
+    ln -s var/roothome /root                                    && \
+    ln -s var/home /home                                        && \
+    ln -s sysroot/ostree /ostree                                && \
+    mv /var/lib/pacman  /usr/share/db/pacman                    && \
+    ln -s /usr/share/db/pacman /var/lib/pacman                  && \
     echo "$(for dir in opt usrlocal home srv mnt ; do echo "d /var/$dir 0755 root root -" ; done)" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
     echo "d /var/roothome 0700 root root -" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
     echo "d /run/media 0755 root root -" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
@@ -48,69 +50,85 @@ RUN sed -i 's|^HOME=.*|HOME=/var/home|' "/etc/default/useradd" && \
 
 
 # sway + custom shit
-RUN pacman -Sy --noconfirm        \
-        sway                      \
-        swayidle                  \
-        swaybg                    \
-        grim                      \
-        slurp                     \
-        brightnessctl             \
-        wtype                     \
-        wf-recorder               \
-        sway-contrib              \
-        swaylock                  \
-        swayimg                   \
-        waybar                    \
-        mako                      \
-        seatd                     \
-        system-config-printer     \
-        blueman                   \
-        chezmoi                   \
-        git                       \
-        gnome-disk-utility        \
-        gcc                       \
-        network-manager-applet    \
-        ghostty                   \
-        ghostty-terminfo          \
-        ghostty-shell-integration \
-        fish                      \
-        ghostty-terminfo          \
-        ibus                      \
-        thunar                    \
-        xarchiver                 \
-        thunar-archive-plugin     \
-        thunar-media-tags-plugin  \
-        thunar-shares-plugin      \
-        pipewire-jack             \
-        pipewire-alsa             \
-        wireplumber               \
-        helvum                    \
-        wezterm                   \
-        zathura                   \
-        lxqt-policykit            \
-        gvfs                      \
-        gvfs-onedrive             \
-        gvfs-mtp                  \
-        podman                    \
-        podman-compose            \
-        distrobox                 \
-        cliphist                  \
-        rofi                      \
-        xdg-desktop-portal-wlr    \
-        android-tools             \
-        android-udev              \
-        android-file-transfer     \
-        tailscale                 \
-        ufw                       \
-        xdg-desktop-portal-gtk    \
-        xdg-user-dirs-gtk         \
-        flatpak &&                \
-  pacman -S --clean --noconfirm && \
+RUN pacman -Sy --noconfirm            \
+        sway                          \
+        swayidle                      \
+        swaybg                        \
+        grim                          \
+        slurp                         \
+        brightnessctl                 \
+        wtype                         \
+        wf-recorder                   \
+        sway-contrib                  \
+        swaylock                      \
+        swayimg                       \
+        waybar                        \
+        mako                          \
+        seatd                         \
+        system-config-printer         \
+        blueman                       \
+        chezmoi                       \
+        git                           \
+        gnome-disk-utility            \
+        gcc                           \
+        network-manager-applet        \
+        ghostty                       \
+        ghostty-terminfo              \
+        ghostty-shell-integration     \
+        fish                          \
+        ghostty-terminfo              \
+        ibus                          \
+        thunar                        \
+        xarchiver                     \
+        thunar-archive-plugin         \
+        thunar-media-tags-plugin      \
+        thunar-shares-plugin          \
+        pipewire-jack                 \
+        pipewire-alsa                 \
+        wireplumber                   \
+        helvum                        \
+        wezterm                       \
+        zathura                       \
+        lxqt-policykit                \
+        gvfs                          \
+        gvfs-onedrive                 \
+        gvfs-mtp                      \
+        podman                        \
+        podman-compose                \
+        distrobox                     \
+        cliphist                      \
+        rofi                          \
+        xdg-desktop-portal-wlr        \
+        android-tools                 \
+        android-udev                  \
+        android-file-transfer         \
+        tailscale                     \
+        ufw                           \
+        xdg-desktop-portal-gtk        \
+        xdg-user-dirs-gtk             \
+        ttf-jetbrains-mono-nerd       \
+        ttf-nerd-fonts-symbols-mono   \
+        ttf-nerd-fonts-symbols-common \
+        ttf-ibm-plex                  \
+        ttf-roboto                    \
+        gsfonts                       \
+        ttf-liberation                \
+        noto-fonts                    \
+        ttf-dejavu                    \
+        noto-fonts-emoji              \
+        noto-fonts-extra              \
+        noto-fonts-cjk                \
+        texlive-latexextra            \
+        texlive-fontsextra            \
+        pcre2                         \
+        flatpak &&                    \
+  pacman -S --clean --noconfirm &&    \
   rm -rf /var/cache/pacman/pkg/*
 
 
 # Setup a temporary root passwd (changeme) for dev purposes
-RUN pacman -Sy whois --noconfirm
+RUN pacman -S --clean --noconfirm pac && \
+    rm -rf /var/cache/pacman/pkg/*
 RUN usermod -p "$(echo "changeme" | mkpasswd -s)" root
 
 RUN bootc container lint
