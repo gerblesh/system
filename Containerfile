@@ -1,7 +1,8 @@
 FROM docker.io/archlinux/archlinux:latest
 
 # base deps
-RUN pacman -Sy --noconfirm \
+RUN --mount=type=tmpfs,dst=/tmp --mount=type=cache,dst=/var/log --mount=type=cache,dst=/var/cache \
+    pacman -Sy --noconfirm \
       base \
       dracut \
       linux \
@@ -17,14 +18,13 @@ RUN pacman -Sy --noconfirm \
       glib2 \
       ostree \
       shadow && \
-  pacman -S --clean --noconfirm && \
-  rm -rf /var/cache/pacman/pkg/*
+  pacman -S --clean --noconfirm
 
 # Regression with newer dracut broke this
 RUN mkdir -p /etc/dracut.conf.d && \
     printf "systemdsystemconfdir=/etc/systemd/system\nsystemdsystemunitdir=/usr/lib/systemd/system\n" | tee /etc/dracut.conf.d/fix-bootc.conf
 
-RUN --mount=type=tmpfs,dst=/tmp --mount=type=tmpfs,dst=/root \
+RUN --mount=type=tmpfs,dst=/tmp --mount=type=tmpfs,dst=/root --mount=type=cache,dst=/var/cache --mount=type=cache,dst=/var/log \
     pacman -S --noconfirm base-devel git rust && \
     git clone "https://github.com/bootc-dev/bootc.git" /tmp/bootc && \
     make -C /tmp/bootc bin install-all install-initramfs-dracut && \
@@ -34,7 +34,8 @@ RUN --mount=type=tmpfs,dst=/tmp --mount=type=tmpfs,dst=/root \
     pacman -S --clean --noconfirm
 
 # Necessary for general behavior expected by image-based systems
-RUN sed -i 's|^HOME=.*|HOME=/var/home|' "/etc/default/useradd"  && \
+RUN --mount=type=tmpfs,dst=/tmp --mount=type=cache,dst=/var/log --mount=type=cache,dst=/var/cache \
+    sed -i 's|^HOME=.*|HOME=/var/home|' "/etc/default/useradd"  && \
     rm -rf /boot /home /root /usr/local /srv                    && \
     mkdir -p /var /sysroot /boot /usr/lib/ostree /usr/share/db  && \
     ln -s var/opt /opt                                          && \
@@ -42,15 +43,19 @@ RUN sed -i 's|^HOME=.*|HOME=/var/home|' "/etc/default/useradd"  && \
     ln -s var/home /home                                        && \
     ln -s sysroot/ostree /ostree                                && \
     mv /var/lib/pacman  /usr/share/db/pacman                    && \
+    mv /var/db/Makefile  /usr/share/db/Makefile                 && \
     ln -s /usr/share/db/pacman /var/lib/pacman                  && \
-    echo "$(for dir in opt usrlocal home srv mnt ; do echo "d /var/$dir 0755 root root -" ; done)" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
+    echo "$(for dir in opt usrlocal home srv mnt db; do echo "d /var/$dir 0755 root root -" ; done)" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
     echo "d /var/roothome 0700 root root -" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
     echo "d /run/media 0755 root root -" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
+    echo "L /var/lib/pacman - root root - /usr/share/db/pacman" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
+    echo "L /var/db/Makefile - - - - /usr/share/db/Makefile" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
     printf "[composefs]\nenabled = yes\n[sysroot]\nreadonly = true\n" | tee "/usr/lib/ostree/prepare-root.conf"
 
 
 # sway + custom shit
-RUN pacman -Sy --noconfirm            \
+RUN --mount=type=tmpfs,dst=/tmp --mount=type=cache,dst=/var/log --mount=type=cache,dst=/var/cache \
+    pacman -Sy --noconfirm            \
         sway                          \
         swayidle                      \
         swaybg                        \
@@ -118,17 +123,15 @@ RUN pacman -Sy --noconfirm            \
         noto-fonts-emoji              \
         noto-fonts-extra              \
         noto-fonts-cjk                \
-        texlive-latexextra            \
-        texlive-fontsextra            \
         pcre2                         \
-        flatpak &&                    \
-  pacman -S --clean --noconfirm &&    \
-  rm -rf /var/cache/pacman/pkg/*
-
+        less                          \
+        vim                           \
+        flatpak                    && \
+    pacman -S --clean --noconfirm
 
 # Setup a temporary root passwd (changeme) for dev purposes
-RUN pacman -S --clean --noconfirm pac && \
-    rm -rf /var/cache/pacman/pkg/*
-RUN usermod -p "$(echo "changeme" | mkpasswd -s)" root
+# RUN pacman -Sy --clean --noconfirm pac && \
+#     rm -rf /var/cache/pacman/pkg/*
+# RUN usermod -p "$(echo "changeme" | mkpasswd -s)" root
 
-RUN bootc container lint
+RUN rm -rf /var/cache/* /var/log/* && bootc container lint
