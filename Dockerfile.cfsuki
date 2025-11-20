@@ -25,25 +25,21 @@ ARG COMPOSEFS_FSVERITY
 RUN --mount=type=secret,id=key \
     --mount=type=secret,id=cert \
     --mount=type=bind,from=base,target=/target \
-     <<EOF
-    set -eux
-
+     # <<EOF
+    set -eux && \
     # Should be generated externally
-    test -n "${COMPOSEFS_FSVERITY}"
-
+    test -n "${COMPOSEFS_FSVERITY}" && \
     # Inject the composefs kernel argument and specify a root with the x86_64 DPS UUID.
     # TODO: Discoverable partition fleshed out, or drop root UUID as systemd-stub extension
     # TODO: https://github.com/containers/composefs-rs/issues/183
-    cmdline="composefs=${COMPOSEFS_FSVERITY} root=UUID=4f68bce3-e8cd-4db1-96e7-fbcaf984b709 console=ttyS0,115200n8 enforcing=0 rw"
-
+    cmdline="composefs=${COMPOSEFS_FSVERITY} root=UUID=4f68bce3-e8cd-4db1-96e7-fbcaf984b709 console=ttyS0,115200n8 enforcing=0 rw" && \
     # pesign uses NSS database so create it from input cert/key
-    mkdir pesign
-    certutil -N -d pesign --empty-password
-    openssl pkcs12 -export -password 'pass:' -inkey /run/secrets/key -in /run/secrets/cert -out db.p12
-    pk12util -i db.p12 -W '' -d pesign
-    subject=$(openssl x509 -in /run/secrets/cert -subject | grep '^subject=CN=' | sed 's/^subject=CN=//')
-
-    kver=$(cd /target/usr/lib/modules && echo *)
+    mkdir pesign && \
+    certutil -N -d pesign --empty-password && \
+    openssl pkcs12 -export -password 'pass:' -inkey /run/secrets/key -in /run/secrets/cert -out db.p12 && \
+    pk12util -i db.p12 -W '' -d pesign && \
+    subject=$(openssl x509 -in /run/secrets/cert -subject | grep '^subject=CN=' | sed 's/^subject=CN=//') && \
+    kver=$(cd /target/usr/lib/modules && echo *) && \
     ukify build \
         --linux "/target/usr/lib/modules/$kver/vmlinuz" \
         --initrd "/target/usr/lib/modules/$kver/initramfs.img" \
@@ -55,34 +51,32 @@ RUN --mount=type=secret,id=key \
         --secureboot-certificate-name "${subject}" \
         --measure \
         --json pretty \
-        --output "/boot/$kver.efi"
+        --output "/boot/$kver.efi" && \
     # Sign systemd-boot as well
-    sdboot="/usr/lib/systemd/boot/efi/systemd-bootx64.efi"
+    sdboot="/usr/lib/systemd/boot/efi/systemd-bootx64.efi" && \
     pesign \
         --certdir "pesign" \
         --certificate "${subject}" \
         --in "${sdboot}" \
         --out "${sdboot}.signed" \
-        --sign
+        --sign && \
     mv "${sdboot}.signed" "${sdboot}"
-EOF
+# EOF
 
 FROM base as final
 
-RUN --mount=type=bind,from=kernel,target=/run/kernel <<EOF
-set -xeuo pipefail
-kver=$(cd /usr/lib/modules && echo *)
-mkdir -p /boot/EFI/Linux
+RUN --mount=type=bind,from=kernel,target=/run/kernel  \
+kver=$(cd /usr/lib/modules && echo *) && \
+mkdir -p /boot/EFI/Linux && \
 # We put the UKI in /boot for now due to composefs verity not being the
 # same due to mtime of /usr/lib/modules being changed
-target=/boot/EFI/Linux/$kver.efi
-cp /run/kernel/boot/$kver.efi $target
+target=/boot/EFI/Linux/$kver.efi && \
+cp /run/kernel/boot/$kver.efi $target && \
 # And remove the defaults
-rm -v /usr/lib/modules/${kver}/{vmlinuz,initramfs.img}
+rm -v /usr/lib/modules/${kver}/{vmlinuz,initramfs.img} && \
 # Symlink into the /usr/lib/modules location
-ln -sr $target /usr/lib/modules/${kver}/$(basename $kver.efi)
+ln -sr $target /usr/lib/modules/${kver}/$(basename $kver.efi) && \
 bootc container lint # --fatal-warnings, warnings no need to be fatel :))
-EOF
 
 FROM base as final-final
 COPY --from=final /boot /boot
