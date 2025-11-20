@@ -40,7 +40,7 @@ cfs_digest=$(podman run --rm --privileged --read-only --security-opt=label=disab
   -v ${graphroot}:/run/host-container-storage:ro --tmpfs /var "$input_image" bootc container compute-composefs-digest)
 
 if test -z "${secureboot}"; then
-  secureboot=$(pwd)/target/test-secureboot
+  secureboot=$(pwd)/keys
   mkdir -p ${secureboot}
   cd $secureboot
   if test '!' -f db.cer; then

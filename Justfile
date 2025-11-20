@@ -5,11 +5,20 @@ filesystem := env("BUILD_FILESYSTEM", "btrfs")
 variant := env("BUILD_VARIANT", "composefs-sealeduki")
 
 
-build-containerfile-local $image_name=image_name $variant=variant:
-    sudo just build-containerfile ${image_name} ${variant}
-
+enroll-secbook-key:
+    #!/usr/bin/bash
+    ENROLLMENT_PASSWORD="bootcrew"
+    SECUREBOOT_KEY=keys/db.cer
+    sudo mokutil --timeout -1
+    echo -e "$ENROLLMENT_PASSWORD\n$ENROLLMENT_PASSWORD" | sudo mokutil --import "$SECUREBOOT_KEY"
+    echo 'At next reboot, the mokutil UEFI menu UI will be displayed (*QWERTY* keyboard input and navigation).\nThen, select "Enroll MOK", and input "bootcrew" as the password'
 
 gen-secboot-keys:
+    #!/usr/bin/env bash
+    set -xeuo pipefail
+
+    openssl req -quiet -newkey rsa:4096 -nodes -keyout keys/db.key -new -x509 -sha256 -days 3650 -subj '/CN=Arch Bootc Signature Database key/' -out keys/db.crt
+    openssl x509 -outform DER -in keys/db.crt -out keys/db.cer
     
 
 
