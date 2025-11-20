@@ -122,7 +122,9 @@ jobs:
         shell: bash
         run: |
           set -xeuo pipefail
-          echo "$TAGS" | while IFS= read -r tag; do
+          split=$(echo $TAGS | tr " " "\n")
+          for tag in $split
+          do
             echo "Applying tag: $tag"
             podman tag "$IMAGE_NAME" "$IMAGE_NAME:$tag"
           done
