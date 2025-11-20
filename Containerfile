@@ -135,3 +135,4 @@ RUN --mount=type=tmpfs,dst=/tmp --mount=type=cache,dst=/var/log --mount=type=cac
 # RUN usermod -p "$(echo "changeme" | mkpasswd -s)" root
 
 RUN rm -rf /var/cache/* /var/log/* && bootc container lint
+LABEL containers.bootc=1
