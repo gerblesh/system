@@ -7,16 +7,13 @@ ARG buildroot=quay.io/centos/centos:stream10
 FROM $base AS base
 
 FROM $buildroot as buildroot-base
-RUN <<EORUN
-set -xeuo pipefail
-
+RUN \
 # systemd-udev is required for /usr/lib/systemd/systemd-measure which
 # is used by ukify as invoked with the `--measure` flag below.  Not
 # strictly required, but nice to have the measured PCR values in the
 # output.
-dnf install -y systemd-ukify systemd-udev pesign openssl systemd-boot-unsigned
+dnf install -y systemd-ukify systemd-udev pesign openssl systemd-boot-unsigned && \
 dnf clean all
-EORUN
 
 FROM buildroot-base as kernel
 # Must be passed
@@ -25,8 +22,6 @@ ARG COMPOSEFS_FSVERITY
 RUN --mount=type=secret,id=key \
     --mount=type=secret,id=cert \
     --mount=type=bind,from=base,target=/target \
-     # <<EOF
-    set -eux && \
     # Should be generated externally
     test -n "${COMPOSEFS_FSVERITY}" && \
     # Inject the composefs kernel argument and specify a root with the x86_64 DPS UUID.
