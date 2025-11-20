@@ -50,6 +50,7 @@ RUN --mount=type=tmpfs,dst=/tmp --mount=type=cache,dst=/var/log --mount=type=cac
     echo "d /run/media 0755 root root -" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
     echo "L /var/lib/pacman - root root - /usr/share/db/pacman" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
     echo "L /var/db/Makefile - - - - /usr/share/db/Makefile" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
+    echo "L /var/mail - - - - /var/spool/mail" | tee -a /usr/lib/tmpfiles.d/bootc-base-dirs.conf && \
     printf "[composefs]\nenabled = yes\n[sysroot]\nreadonly = true\n" | tee "/usr/lib/ostree/prepare-root.conf"
 
 

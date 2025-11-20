@@ -9,13 +9,17 @@ build-containerfile-local $image_name=image_name $variant=variant:
     sudo just build-containerfile ${image_name} ${variant}
 
 
+gen-secboot-keys:
+    
+
+
 build-containerfile $image_name=image_name $variant=variant:
     #!/usr/bin/env bash
     set -xeuo pipefail
 
     podman build -t "localhost/${image_name}:unsealed" .
     # TODO: we can make this a CLI program with better UX: https://github.com/bootc-dev/bootc/issues/1498
-    ./build-sealed "${variant}" "localhost/${image_name}:unsealed" "localhost/${image_name}:${image_tag}"
+    ./build-sealed "${variant}" "localhost/${image_name}:unsealed" "localhost/${image_name}:${image_tag}" "keys/"
 
 
 bootc *ARGS:

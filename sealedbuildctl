@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+# vi:ft=py
+
+
+import argparse
+import os
+
+
+def main():
+    pass
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="builds a sealed bootc image given an input image"
+    )
+    subparsers = parser.add_subparsers(help="Subcommands", required=True)
+    # build=
+    parser.add_argument("out_tags", help="output image tags, seperated by \n")
+    parser.add_argument("labels", help="output image labels, seperated by \n")
+    parser.add_argument("secureboot")
+
+    args = parser.parse_args()
+
+    global ARGS
+    ARGS = args

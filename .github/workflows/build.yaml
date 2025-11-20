@@ -54,6 +54,10 @@ jobs:
           # https://artifacthub.io/docs/topics/repositories/container-images/
           # https://linux.die.net/man/1/date
           echo "date=$(date -u +%Y\-%m\-%d\T%H\:%M\:%S\Z)" >> $GITHUB_OUTPUT
+      - name: Install Deps
+        id: deps
+        run: |
+          apt install -y just podman
 
       - name: Image Metadata
         uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5
@@ -80,7 +84,6 @@ jobs:
             io.artifacthub.package.license=Apache-2.0
             io.artifacthub.package.logo-url=${{ env.IMAGE_LOGO_URL }}
             io.artifacthub.package.prerelease=false
-            containers.bootc=1
           sep-tags: " "
           sep-annotations: " "
 
