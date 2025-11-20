@@ -19,7 +19,6 @@ gen-secboot-keys:
 
     openssl req -quiet -newkey rsa:4096 -nodes -keyout keys/db.key -new -x509 -sha256 -days 3650 -subj '/CN=Arch Bootc Signature Database key/' -out keys/db.crt
     openssl x509 -outform DER -in keys/db.crt -out keys/db.cer
-    
 
 
 build-containerfile $image_name=image_name $variant=variant:
@@ -50,4 +49,5 @@ generate-bootable-image $base_dir=base_dir $filesystem=filesystem:
     if [ ! -e "${base_dir}/bootable.img" ] ; then
         fallocate -l 20G "${base_dir}/bootable.img"
     fi
-    just bootc install to-disk --composefs-backend --via-loopback /data/bootable.img --filesystem "${filesystem}" --wipe --bootloader systemd
+    just bootc install to-disk --composefs-backend /data/bootable.img --filesystem "${filesystem}" --wipe --bootloader systemd
+

@@ -37,8 +37,6 @@ jobs:
 
     steps:
       - name: Prepare environment
-        env:
-          DB_CRT: ${{ secrets.DB_CRT }}
         run: |
           # Lowercase the image uri
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
@@ -51,9 +49,11 @@ jobs:
       - name: Fetch Secboot key
         env:
           DB_CRT: ${{ secrets.DB_CRT }}
+          DB_KEY: ${{ secrets.DB_KEY }}
         run: |
           echo "Adding signing key from gha to db.crt"
           echo "$DB_CRT" > keys/db.crt
+          echo "$DB_KEY" > keys/db.key
 
       - name: Get current date
         id: date
