@@ -27,7 +27,7 @@ RUN mkdir -p /etc/dracut.conf.d && \
 RUN --mount=type=tmpfs,dst=/tmp --mount=type=tmpfs,dst=/root --mount=type=cache,dst=/var/cache --mount=type=cache,dst=/var/log \
     pacman -S --noconfirm base-devel git rust && \
     git clone "https://github.com/bootc-dev/bootc.git" /tmp/bootc && \
-    make -C /tmp/bootc bin install-all install-initramfs-dracut && \
+    make -C /tmp/bootc bin install-all && \
     sh -c 'export KERNEL_VERSION="$(basename "$(find /usr/lib/modules -maxdepth 1 -type d | grep -v -E "*.img" | tail -n 1)")" && \
     dracut --force --no-hostonly --reproducible --zstd --verbose --kver "$KERNEL_VERSION"  "/usr/lib/modules/$KERNEL_VERSION/initramfs.img"' && \
     pacman -Rns --noconfirm base-devel git rust && \
@@ -108,6 +108,8 @@ RUN --mount=type=tmpfs,dst=/tmp --mount=type=cache,dst=/var/log --mount=type=cac
         android-tools                 \
         android-udev                  \
         android-file-transfer         \
+        tuned                         \
+        tuned-ppd                     \ 
         tailscale                     \
         ufw                           \
         xdg-desktop-portal-gtk        \
