@@ -28,7 +28,7 @@ build-containerfile $image_name=image_name $variant=variant:
 
     podman build -t "localhost/${image_name}_unsealed" .
     # TODO: we can make this a CLI program with better UX: https://github.com/bootc-dev/bootc/issues/1498
-    ./build-sealed "${variant}" "localhost/${image_name}_unsealed" "${image_name}" "keys/"
+    ./build-sealed "${variant}" "localhost/${image_name}_unsealed" "${image_name}" "keys"
 
 
 bootc *ARGS:
