@@ -124,7 +124,7 @@ jobs:
           set -xeuo pipefail
           echo "$TAGS" | while IFS= read -r tag; do
             echo "Applying tag: $tag"
-            podman tag "$IMAGE_NAME" "$tag"
+            podman tag "$IMAGE_NAME" "$IMAGE_NAME:$tag"
           done
 
 
