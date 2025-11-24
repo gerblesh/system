@@ -22,15 +22,15 @@ gen-secboot-keys:
     set -xeuo pipefail
 
     # for signing
-    openssl req -quiet -newkey rsa:4096 -nodes -keyout keys/db.key -new -x509 -sha256 -days 3650 -subj '/CN=Arch Bootc Signature Database key/' -out keys/db.crt
+    openssl req -quiet -newkey rsa:4096 -nodes -keyout keys/db.key -new -x509 -sha256 -days 3650 -subj '/CN=Test Signature Database key/' -out keys/db.crt
     openssl x509 -outform DER -in keys/db.crt -out keys/db.cer
 
     # test keys for VMs, etc
-    openssl req -quiet -newkey rsa:4096 -nodes -keyout KEK.key -new -x509 -sha256 -days 3650 -subj '/CN=Test Key Exchange Key/' -out KEK.crt
-    openssl x509 -outform DER -in KEK.crt -out KEK.cer
+    openssl req -quiet -newkey rsa:4096 -nodes -keyout keys/KEK.key -new -x509 -sha256 -days 3650 -subj '/CN=Test Key Exchange Key/' -out keys/KEK.crt
+    openssl x509 -outform DER -in keys/KEK.crt -out keys/KEK.cer
 
-    openssl req -quiet -newkey rsa:4096 -nodes -keyout db.key -new -x509 -sha256 -days 3650 -subj '/CN=Test Signature Database key/' -out db.crt
-    openssl x509 -outform DER -in db.crt -out db.cer
+    openssl req -quiet -newkey rsa:4096 -nodes -keyout keys/PK.key -new -x509 -sha256 -days 3650 -subj '/CN=Test Platform Key/' -out keys/PK.crt
+    openssl x509 -outform DER -in keys/PK.crt -out keys/PK.cer
 
 
 build-containerfile $image_name=image_name $variant=variant:
