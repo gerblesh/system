@@ -1,6 +1,6 @@
 image_name := env("BUILD_IMAGE_NAME", "system")
 image_tag := env("BUILD_IMAGE_TAG", "latest")
-base_dir := env("BUILD_BASE_DIR", ".")
+base_dir := env("BUILD_BASE_DIR", "/tmp")
 
 filesystem := env("BUILD_FILESYSTEM", "btrfs")
 variant := env("BUILD_VARIANT", "composefs-sealeduki")
@@ -8,7 +8,6 @@ variant := env("BUILD_VARIANT", "composefs-sealeduki")
 namespace := env("BUILD_NAMESPACE", "gerblesh")
 sudo := env("BUILD_ELEVATE", "sudo")
 just_exe := just_executable()
-
 
 enroll-secboot-key:
     #!/usr/bin/bash
@@ -51,7 +50,7 @@ bootc *ARGS:
 install-image $target_device $filesystem=filesystem:
     #!/usr/bin/env bash
     set -xeuo pipefail
-    {{just_exe}} bootc install to-disk --composefs-backend --filesystem "${filesystem}" --wipe --bootloader systemd --via-loopback /data/bootable.img
+    {{just_exe}} bootc install to-disk --composefs-backend --filesystem "${filesystem}" --wipe --bootloader systemd {{target_device}}
 
 copy-image-root:
     podman save {{image_name}} | sudo podman load
