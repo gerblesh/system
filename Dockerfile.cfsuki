@@ -1,9 +1,9 @@
 # from: https://github.com/bootc-dev/bootc/blob/main/Dockerfile.cfsuki
 
 # Override via --build-arg=base=<image> to use a different base
-ARG base=localhost/system:base
+ARG base=localhost/system_unsealed
 # This is where we get the tools to build the UKI
-ARG buildroot=quay.io/centos/centos:stream10
+ARG buildroot=docker.io/archlinux/archlinux:latest
 FROM $base AS base
 
 FROM $buildroot as buildroot-base
@@ -12,8 +12,9 @@ RUN \
 # is used by ukify as invoked with the `--measure` flag below.  Not
 # strictly required, but nice to have the measured PCR values in the
 # output.
-dnf install -y systemd-ukify systemd-udev pesign openssl systemd-boot-unsigned && \
-dnf clean all
+# rm /var/lib/pacman/db.lck && \
+pacman -Sy --noconfirm systemd-ukify pesign openssl systemd-sysvcompat systemd && \
+pacman -S --clean --noconfirm
 
 FROM buildroot-base as kernel
 # Must be passed
@@ -27,7 +28,7 @@ RUN --mount=type=secret,id=key \
     # Inject the composefs kernel argument and specify a root with the x86_64 DPS UUID.
     # TODO: Discoverable partition fleshed out, or drop root UUID as systemd-stub extension
     # TODO: https://github.com/containers/composefs-rs/issues/183
-    cmdline="composefs=${COMPOSEFS_FSVERITY} root=UUID=4f68bce3-e8cd-4db1-96e7-fbcaf984b709 console=ttyS0,115200n8 enforcing=0 rw" && \
+    cmdline="composefs=${COMPOSEFS_FSVERITY} console=ttyS0,115200n8 root=gpt-auto enforcing=0 rw" && \
     # pesign uses NSS database so create it from input cert/key
     mkdir pesign && \
     certutil -N -d pesign --empty-password && \

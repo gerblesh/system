@@ -1,16 +1,21 @@
 image_name := env("BUILD_IMAGE_NAME", "system")
 image_tag := env("BUILD_IMAGE_TAG", "latest")
 base_dir := env("BUILD_BASE_DIR", ".")
+
 filesystem := env("BUILD_FILESYSTEM", "btrfs")
 variant := env("BUILD_VARIANT", "composefs-sealeduki")
 
+namespace := env("BUILD_NAMESPACE", "gerblesh")
+sudo := env("BUILD_ELEVATE", "sudo")
+just_exe := just_executable()
 
-enroll-secbook-key:
+
+enroll-secboot-key:
     #!/usr/bin/bash
-    ENROLLMENT_PASSWORD="bootcrew"
+    ENROLLMENT_PASSWORD=""
     SECUREBOOT_KEY=keys/db.cer
-    sudo mokutil --timeout -1
-    echo -e "$ENROLLMENT_PASSWORD\n$ENROLLMENT_PASSWORD" | sudo mokutil --import "$SECUREBOOT_KEY"
+    "{{sudo}}" mokutil --timeout -1
+    echo -e "$ENROLLMENT_PASSWORD\n$ENROLLMENT_PASSWORD" | "{{sudo}}" mokutil --import "$SECUREBOOT_KEY"
     echo 'At next reboot, the mokutil UEFI menu UI will be displayed (*QWERTY* keyboard input and navigation).\nThen, select "Enroll MOK", and input "bootcrew" as the password'
 
 gen-secboot-keys:
@@ -31,7 +36,7 @@ build-containerfile $image_name=image_name $variant=variant:
 
 
 bootc *ARGS:
-    sudo podman run \
+    {{sudo}} podman run \
         --rm --privileged --pid=host \
         -it \
         -v /sys/fs/selinux:/sys/fs/selinux \
@@ -41,13 +46,26 @@ bootc *ARGS:
         -e RUST_LOG=debug \
         -v "{{base_dir}}:/data" \
         --security-opt label=type:unconfined_t \
-        "{{image_name}}:{{image_tag}}" bootc {{ARGS}}
+        "localhost/{{image_name}}:{{image_tag}}" bootc {{ARGS}}
+
+install-image $target_device $filesystem=filesystem:
+    #!/usr/bin/env bash
+    set -xeuo pipefail
+    {{just_exe}} bootc install to-disk --composefs-backend --filesystem "${filesystem}" --wipe --bootloader systemd --via-loopback /data/bootable.img
+
+copy-image-root:
+    podman save {{image_name}} | sudo podman load
+
+pull-image-root:
+    {{sudo}} podman pull ghcr.io/{{namespace}}/{{image_name}}:{{image_tag}}
+    {{sudo}} podman tag "ghcr.io/{{namespace}}/{{image_name}}:{{image_tag}}" "localhost/{{image_name}}:{{image_tag}}"
+
+fix-var-containers-selinux:
+     {{sudo}} restorecon -RFv /var/lib/containers/storage
 
 generate-bootable-image $base_dir=base_dir $filesystem=filesystem:
     #!/usr/bin/env bash
-    set -xeuo pipefail
     if [ ! -e "${base_dir}/bootable.img" ] ; then
         fallocate -l 20G "${base_dir}/bootable.img"
     fi
-    just bootc install to-disk --composefs-backend /data/bootable.img --filesystem "${filesystem}" --wipe --bootloader systemd
-
+    just bootc install to-disk --composefs-backend --via-loopback /data/bootable.img --filesystem "${filesystem}" --wipe --bootloader systemd
