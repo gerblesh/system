@@ -36,8 +36,8 @@ esac
 
 graphroot=$(podman system info -f '{{.Store.GraphRoot}}')
 echo "Computing composefs digest..."
-cfs_digest=$(podman run --rm --privileged --read-only --security-opt=label=disable -v /sys:/sys:ro --net=none \
-  -v ${graphroot}:/run/host-container-storage:ro --tmpfs /var "$input_image" bootc container compute-composefs-digest)
+# cfs_digest=$(podman run --rm --privileged --read-only --security-opt=label=disable -v /sys:/sys:ro --net=none \
+#   -v ${graphroot}:/run/host-container-storage:ro --tmpfs /var "$input_image" bootc container compute-composefs-digest)
 
 if test -z "${secureboot}"; then
   secureboot=$(pwd)/keys

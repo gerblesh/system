@@ -2,7 +2,7 @@
 ARG base=localhost/bootc
 # This is where we get the tools to build the UKI
 ARG buildroot=quay.io/centos/centos:stream10
-FROM $base AS base
+FROM $base AS base-unsigned
 
 FROM $buildroot as buildroot-base
 RUN <<EORUN
@@ -16,20 +16,14 @@ dnf install -y systemd-ukify systemd-udev pesign openssl systemd-boot-unsigned
 dnf clean all
 EORUN
 
-FROM buildroot-base as kernel
-# Must be passed
-ARG COMPOSEFS_FSVERITY
+
+FROM buildroot-base as sd-boot-kernel
+# Sign sdboot and put it on the target first
 RUN --mount=type=secret,id=key \
     --mount=type=secret,id=cert \
-    --mount=type=bind,from=base,target=/target \
-     <<EOF
-    set -eux
-
-    # Should be generated externally
-    test -n "${COMPOSEFS_FSVERITY}"
-
-    cmdline="composefs=${COMPOSEFS_FSVERITY} console=ttyS0,115200n8 enforcing=0 rw"
-
+    --mount=type=bind,from=base-unsigned,target=/target \
+<<EORUN
+set -eux
     # pesign uses NSS database so create it from input cert/key
     mkdir pesign
     certutil -N -d pesign --empty-password
@@ -37,6 +31,42 @@ RUN --mount=type=secret,id=key \
     pk12util -i db.p12 -W '' -d pesign
     subject=$(openssl x509 -in /run/secrets/cert -subject | grep '^subject=CN=' | sed 's/^subject=CN=//')
 
+    sdboot="target/usr/lib/systemd/boot/efi/systemd-bootx64.efi"
+    # remove signature from systemd boot
+
+
+    # now that it's unsigned we can sign it systemd-boot as well
+    pesign \
+        --certdir "pesign" \
+        --certificate "${subject}" \
+        --in "${sdboot}" \
+        --out "${sdboot}.signed" \
+        --sign
+    mv "${sdboot}.signed" "target${sdboot}"
+    
+EORUN
+
+# We now want to compute the composefs digest with the new image (with signed sdboot)
+# Compute composefs digest AFTER signing systemd-boot
+FROM base-unsigned as base
+RUN --mount=type=bind,from=buildroot-base,target=/run/buildroot \
+<<EORUN 
+set -eux
+echo "Computing composefs digest..."
+COMPOSEFS_FSVERITY=$(bootc container compute-composefs-digest)
+# Should be generated successfully
+test -n "${COMPOSEFS_FSVERITY}"
+printf '%s' "$COMPOSEFS_FSVERITY" > /run/buildroot/COMPOSEFS_FSVERITY
+EORUN
+
+FROM sd-boot-kernel as kernel
+RUN  --mount=type=bind,from=base,target=/target \
+     <<EOF
+    set -eux
+
+    COMPOSEFS_FSVERITY=$(< /COMPOSEFS_FSVERITY)
+
+    cmdline="composefs=${COMPOSEFS_FSVERITY} console=ttyS0,115200n8 enforcing=0 rw"
     kver=$(cd /target/usr/lib/modules && echo *)
     ukify build \
         --linux "/target/usr/lib/modules/$kver/vmlinuz" \
@@ -50,15 +80,6 @@ RUN --mount=type=secret,id=key \
         --measure \
         --json pretty \
         --output "/boot/$kver.efi"
-    # Sign systemd-boot as well
-    sdboot="/usr/lib/systemd/boot/efi/systemd-bootx64.efi"
-    pesign \
-        --certdir "pesign" \
-        --certificate "${subject}" \
-        --in "${sdboot}" \
-        --out "${sdboot}.signed" \
-        --sign
-    mv "${sdboot}.signed" "${sdboot}"
 EOF
 
 FROM base as final
