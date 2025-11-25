@@ -34,8 +34,8 @@ case $variant in
 esac
 
 
-graphroot=$(podman system info -f '{{.Store.GraphRoot}}')
-echo "Computing composefs digest..."
+# graphroot=$(podman system info -f '{{.Store.GraphRoot}}')
+# echo "Computing composefs digest..."
 # cfs_digest=$(podman run --rm --privileged --read-only --security-opt=label=disable -v /sys:/sys:ro --net=none \
 #   -v ${graphroot}:/run/host-container-storage:ro --tmpfs /var "$input_image" bootc container compute-composefs-digest)
 
@@ -61,6 +61,6 @@ if test -z "${secureboot}"; then
   cd -
 fi
 
-runv podman build -t $output_image --build-arg=COMPOSEFS_FSVERITY=${cfs_digest} --build-arg=base=${input_image} \
+runv podman build -t $output_image --build-arg=base=${input_image} \
   --secret=id=key,src=${secureboot}/db.key \
   --secret=id=cert,src=${secureboot}/db.crt -f Dockerfile.cfsuki .
