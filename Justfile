@@ -11,11 +11,11 @@ just_exe := just_executable()
 
 enroll-secboot-key:
     #!/usr/bin/bash
-    ENROLLMENT_PASSWORD=""
+    ENROLLMENT_PASSWORD="bootcrew"
     SECUREBOOT_KEY=keys/db.cer
     "{{sudo}}" mokutil --timeout -1
     echo -e "$ENROLLMENT_PASSWORD\n$ENROLLMENT_PASSWORD" | "{{sudo}}" mokutil --import "$SECUREBOOT_KEY"
-    echo 'At next reboot, the mokutil UEFI menu UI will be displayed (*QWERTY* keyboard input and navigation).\nThen, select "Enroll MOK", and input "bootcrew" as the password'
+    echo -e "At next reboot, the mokutil UEFI menu UI will be displayed (*QWERTY* keyboard input and navigation).\nThen, select \"Enroll MOK\", and input \"$ENROLLMENT_PASSWORD\" as the password"
 
 gen-secboot-keys:
     #!/usr/bin/env bash
@@ -37,9 +37,9 @@ build-containerfile $image_name=image_name $variant=variant:
     #!/usr/bin/env bash
     set -xeuo pipefail
 
-    podman build -t "localhost/${image_name}_unsealed" .
+    {{sudo}} podman build -t "localhost/${image_name}_unsealed" .
     # TODO: we can make this a CLI program with better UX: https://github.com/bootc-dev/bootc/issues/1498
-    ./build-sealed "${variant}" "localhost/${image_name}_unsealed" "${image_name}" "keys"
+    {{sudo}} ./build-sealed "${variant}" "localhost/${image_name}_unsealed" "${image_name}" "keys"
 
 
 bootc *ARGS:
@@ -76,3 +76,15 @@ generate-bootable-image $base_dir=base_dir $filesystem=filesystem:
         fallocate -l 20G "${base_dir}/bootable.img"
     fi
     just bootc install to-disk --composefs-backend --via-loopback /data/bootable.img --filesystem "${filesystem}" --wipe --bootloader systemd
+
+run-vm:
+    # shitballs :(
+    systemd-vmspawn --cpus=4 --kvm=true --pass-ssh-key=true --secure-boot=true --ram=10G --console=interactive -i /tmp/bootable.img
+    # qemu-system-x86_64 \
+    #     -enable-kvm -m 4G -cpu host -smp 4 \
+    #     -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE.secboot.fd \
+    #     -drive if=pflash,format=raw,file=efi-vars.fd \
+    #     -drive file=/tmp/bootable.img,format=raw \
+    #     -nographic
+
+        

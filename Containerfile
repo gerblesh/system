@@ -104,5 +104,9 @@ RUN --mount=type=tmpfs,dst=/tmp --mount=type=cache,dst=/var/log --mount=type=cac
         flatpak                    && \
     pacman -S --clean --noconfirm
 
+
+RUN pacman -S whois --noconfirm
+RUN usermod -p "$(echo "changeme" | mkpasswd -s)" root
+
 RUN bootc container lint
 LABEL containers.bootc=1

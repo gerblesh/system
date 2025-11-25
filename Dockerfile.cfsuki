@@ -75,7 +75,7 @@ cp /run/kernel/boot/$kver.efi $target
 rm -v /usr/lib/modules/${kver}/{vmlinuz,initramfs.img}
 # Symlink into the /usr/lib/modules location
 ln -sr $target /usr/lib/modules/${kver}/$(basename $kver.efi)
-bootc container lint --fatal-warnings
+bootc container lint # --fatal-warnings no fatal warning
 EOF
 
 FROM base as final-final

@@ -146,7 +146,7 @@ jobs:
         id: build_image
         shell: bash
         run: |
-          just build-containerfile "$IMAGE_NAME"
+          BUILD_ELEVATE="" just build-containerfile "$IMAGE_NAME"
 
       - name: Tag Image
         id: tag
